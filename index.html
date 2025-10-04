@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: #f2f2f2;
+        }
+
+        .chat-container {
+            border-radius: 5px;
+            background-color: white;
+            padding: 20px;
+            max-width: 500px;
+            width: 100%;
+            box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        #result {
+            height: 400px;
+            overflow-y: auto;
+            border: 1px solid #ccc;
+            padding: 10px;
+            margin-bottom: 10px;
+            background-color: #f9f9f9;
+            font-family: monospace;
+        }
+
+        #result div {
+            margin-bottom: 10px;
+            line-height: 1.4;
+        }
+
+        #message {
+            width: 70%;
+            padding: 10px;
+            margin-right: 10px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+        }
+
+        button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            background-color: #007BFF;
+            color: white;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="chat-container">
+        <h1>Chat with AI</h1>
+        <div id="result"></div>
+
+        <input type="text" id="message" placeholder="Type your message here">
+        <button onclick="sendMessage()">Send Message</button>
+    </div>
+
+    <script>
+        async function sendMessage() {
+            var message = document.getElementById("message").value;
+            if (!message.trim()) return;
+
+            // Clear previous results and add user message
+            document.getElementById("result").innerHTML += `<div><strong>You:</strong> ${message}</div>`;
+            document.getElementById("message").value = "";
+
+            // Add AI response placeholder
+            var aiResponseDiv = document.createElement('div');
+            aiResponseDiv.innerHTML = '<strong>AI:</strong> ';
+            document.getElementById("result").appendChild(aiResponseDiv);
+
+            try {
+                var response = await fetch('http://localhost:8000/stream_message/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ content: message })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                var reader = response.body.getReader();
+                var decoder = new TextDecoder('utf-8');
+
+                while (true) {
+                    const { done, value } = await reader.read();
+
+                    if (done) break;
+
+                    let chunk = decoder.decode(value, { stream: true });
+                    console.log('Received chunk:', chunk); // Debug log
+
+                    // Handle SSE format
+                    if (chunk.startsWith('data: ')) {
+                        let token = chunk.replace('data: ', '').replace('\n\n', '');
+                        if (token.trim()) {
+                            aiResponseDiv.innerHTML += token;
+                            // Auto-scroll to bottom
+                            document.getElementById("result").scrollTop = document.getElementById("result").scrollHeight;
+                        }
+                    } else {
+                        // Fallback for plain text
+                        aiResponseDiv.innerHTML += chunk;
+                        document.getElementById("result").scrollTop = document.getElementById("result").scrollHeight;
+                    }
+                }
+
+                // Add line break after complete response
+                aiResponseDiv.innerHTML += '<br><br>';
+
+            } catch (error) {
+                console.error('Error:', error);
+                aiResponseDiv.innerHTML += `<span style="color: red;">Error: ${error.message}</span><br><br>`;
+            }
+        }
+
+        // Allow Enter key to send message
+        document.getElementById("message").addEventListener("keypress", function (event) {
+            if (event.key === "Enter") {
+                sendMessage();
+            }
+        });
+    </script>
+
+</body>
+
+</html>
