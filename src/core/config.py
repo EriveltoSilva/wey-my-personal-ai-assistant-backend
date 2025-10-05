@@ -5,7 +5,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 class Settings(BaseSettings):
     # Project
-    PROJECT_NAME: str = "Hub do Saber"
+    PROJECT_NAME: str = "Wey"
     PROJECT_DESCRIPTION: str
 
     DEBUG: bool = True
