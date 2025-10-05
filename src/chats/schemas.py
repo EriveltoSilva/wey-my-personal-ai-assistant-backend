@@ -11,7 +11,6 @@ from src.chats.enums import ChatStatusEnum, MessageSenderEnum, MessageTypeEnum
 class ChatCreate(BaseModel):
     """Schema for creating a new chat."""
 
-    agent_id: UUID
     initial_message: str
 
     @field_validator("initial_message")
@@ -31,7 +30,6 @@ class ChatResponse(BaseModel):
     last_message_at: Optional[datetime]
     created_at: datetime
     user_id: UUID
-    agent_id: UUID
 
     class Config:
         from_attributes = True

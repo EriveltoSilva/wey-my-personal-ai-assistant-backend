@@ -3,8 +3,7 @@ from datetime import date, datetime
 from typing import List, Optional
 
 from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator
-
-from src.agents.enums import ExperienceLevelEnum, InteractionStyleEnum
+from src.users.enums import ExperienceLevelEnum, InteractionStyleEnum
 
 # from src.general.schemas import AddressResponseDTO, PhoneResponseDTO
 

@@ -7,7 +7,6 @@ from functools import lru_cache
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from src.agents.routes import router as agent_routes
 from src.auth.routes import router as auth_routes
 from src.chats.background_tasks import background_tasks
 from src.chats.routes import router as chat_routes
@@ -71,7 +70,6 @@ app.add_exception_handler(HTTPException, http_exception_handler)
 
 app.include_router(websocket_routes)
 app.include_router(auth_routes, prefix=settings.API_V1_STR)
-app.include_router(agent_routes, prefix=settings.API_V1_STR)
 app.include_router(user_routes, prefix=settings.API_V1_STR)
 app.include_router(interest_routes, prefix=settings.API_V1_STR)
 app.include_router(professional_area_routes, prefix=settings.API_V1_STR)

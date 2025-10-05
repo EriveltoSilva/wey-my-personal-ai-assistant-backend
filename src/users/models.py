@@ -7,11 +7,9 @@ from typing import List
 from sqlalchemy import Boolean, Column, Date, ForeignKey, String, Table, Text
 from sqlalchemy.dialects import postgresql as pg
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-from src.agents.enums import ExperienceLevelEnum
-from src.agents.models import Agent
 from src.chats.models import Chat
 from src.core.database import Base
-from src.users.enums import GenderEnum, UserRoleEnum
+from src.users.enums import ExperienceLevelEnum, GenderEnum, UserRoleEnum
 
 # Association table for many-to-many relationship between User and Interest
 user_interest_association = Table(
@@ -38,10 +36,6 @@ class ProfessionalArea(Base):
 
     # Relationships - One professional area can have many users
     users: Mapped[List["User"]] = relationship("User", back_populates="professional_area")
-    # Many-to-many relationship with agents
-    agents: Mapped[List["Agent"]] = relationship(
-        "Agent", secondary="tbl_agent_professional_areas", back_populates="professional_areas"
-    )
 
     def __repr__(self):
         return f"<ProfessionalArea(id={self.id}, name={self.name}, code={self.code}, is_active={self.is_active})>"
@@ -123,7 +117,7 @@ class User(Base):
         return {"id": str(self.id), "username": self.username, "role": self.role, "full_name": self.full_name}
 
     def get_professional_profile(self):
-        """Get user's professional profile for agent matching."""
+        """Get user's professional profile."""
         return {
             "professional_area": (
                 {
@@ -139,43 +133,6 @@ class User(Base):
             "interests": [interest.name for interest in self.interests] if self.interests else [],
             "preferred_interaction_style": self.preferred_interaction_style,
             "onboarding_completed": self.onboarding_completed,
-        }
-
-    def get_accessible_agents_filter(self):
-        """Get filter criteria for agents accessible to this user."""
-        if not self.onboarding_completed:
-            return None
-
-        # Now agents are filtered by professional areas instead of categories
-        accessible_professional_areas = []
-
-        # Include user's own professional area
-        if self.professional_area:
-            accessible_professional_areas.append(
-                {
-                    "id": str(self.professional_area.id),
-                    "name": self.professional_area.name,
-                    "code": self.professional_area.code,
-                }
-            )
-
-        # Add interest-related professional areas if interests map to professional areas
-        if self.interests:
-            interest_categories = [interest.category for interest in self.interests if interest.category]
-            accessible_professional_areas.extend(interest_categories)
-
-        return {
-            "professional_areas": accessible_professional_areas,
-            "user_professional_area": (
-                {
-                    "id": str(self.professional_area.id),
-                    "name": self.professional_area.name,
-                    "code": self.professional_area.code,
-                }
-                if self.professional_area
-                else None
-            ),
-            "experience_level": self.experience_level,
         }
 
 

@@ -23,7 +23,6 @@ class ChatService:
         """Create a new chat."""
         new_chat = Chat(
             user_id=user_id,
-            agent_id=str(chat_data.agent_id),
             title=Chat.generate_title(chat_data.initial_message),
             status=ChatStatusEnum.ACTIVE.value,
             last_message_at=datetime.now(),
@@ -80,7 +79,6 @@ class ChatService:
         """Get user's most recent chats."""
         query = (
             select(Chat)
-            .options(selectinload(Chat.agent))
             .where(and_(Chat.user_id == user_id, Chat.status != ChatStatusEnum.DELETED.value))
             .order_by(desc(Chat.last_message_at))
             .limit(params.limit)
@@ -93,7 +91,6 @@ class ChatService:
         """Get user's archived chats."""
         query = (
             select(Chat)
-            .options(selectinload(Chat.agent))
             .where(and_(Chat.user_id == user_id, Chat.status == ChatStatusEnum.ARCHIVED.value))
             .order_by(desc(Chat.last_message_at))
             .limit(params.limit)
@@ -157,12 +154,12 @@ class ChatService:
         return chat
 
     ###############################################################################################
-    async def create_or_get_chat(self, user_id: str, agent_id: str, title: Optional[str] = None) -> Chat:
+    async def create_or_get_chat(self, user_id: str, title: Optional[str] = None) -> Chat:
         """Create new chat or get existing active chat."""
         # Try to find an existing active chat
         query = (
             select(Chat)
-            .where(and_(Chat.user_id == user_id, Chat.agent_id == agent_id, Chat.status == ChatStatusEnum.ACTIVE.value))
+            .where(and_(Chat.user_id == user_id, Chat.status == ChatStatusEnum.ACTIVE.value))
             .order_by(desc(Chat.last_message_at))
             .limit(1)
         )
@@ -174,9 +171,7 @@ class ChatService:
             return existing_chat
 
         # Create new chat
-        new_chat = Chat(
-            user_id=user_id, agent_id=agent_id, title=title or "New Chat", status=ChatStatusEnum.ACTIVE.value
-        )
+        new_chat = Chat(user_id=user_id, title=title or "New Chat", status=ChatStatusEnum.ACTIVE.value)
 
         self.db.add(new_chat)
         await self.db.commit()

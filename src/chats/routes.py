@@ -1,10 +1,16 @@
 """Chat routes for API endpoints."""
 
+from datetime import datetime
 from typing import Annotated, List
 
 from fastapi import APIRouter, HTTPException, Path, Query, status
-from src.chats.schemas import ChatCreate, ChatMessageResponse, ChatResponse
+from src.chats.models import ChatMessage
+from src.chats.routes_streaming import chat_quick_response
+from src.chats.schemas import ChatCreate, ChatMessageResponse, ChatResponse, MessageSenderEnum, MessageTypeEnum
+from src.chats.schemas_streaming import Message
 from src.chats.services import ChatService
+from src.core.config import settings
+from src.core.logger import logger
 from src.core.schemas import FilterParams
 from src.core.security import auth_user_dependency, db_dependency
 from src.exceptions import NotFoundException
@@ -17,7 +23,42 @@ async def create_chat(chat_data: ChatCreate, current_user: auth_user_dependency,
     """Create a new chat."""
     try:
         chat_service = ChatService(db)
+        start_time = datetime.now()
+
+        # Create the chat with initial user message
         chat = await chat_service.create_chat(user_id=str(current_user.id), chat_data=chat_data)
+
+        try:
+            message = Message(role=MessageSenderEnum.USER.value, content=chat_data.initial_message)
+            ai_response = await chat_quick_response(message)
+
+            if ai_response and ai_response.get("response"):
+                # Calculate response time
+                response_time_ms = int((datetime.now() - start_time).total_seconds() * 1000)
+
+                ai_message = ChatMessage(
+                    chat_id=chat.id,
+                    content=ai_response["response"],
+                    sender=MessageSenderEnum.AGENT,
+                    message_type=MessageTypeEnum.TEXT,
+                    tokens_used=0,  # TODO: Implement token counting
+                    response_time_ms=response_time_ms,
+                    model_used=settings.OPENAI_DEFAULT_MODEL,
+                    temperature_used=settings.MESSAGE_RESPONSE_TEMPERATURE,
+                )
+
+                message_response = db.add(ai_message)
+                await db.commit()
+                await db.refresh(ai_message)
+
+                chat.message_count += 1
+                chat.last_message_at = datetime.now()
+                chat.total_tokens_used += 0  # TODO: Add actual token count when available
+                await db.commit()
+
+        except Exception as ai_error:
+            logger.error(f"Failed to generate AI response for chat {chat.id}: {ai_error}")
+
         return chat
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

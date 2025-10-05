@@ -63,7 +63,6 @@ async def __process_user_message(data: Dict[str, Any], user_id: str, db: AsyncSe
             "data": {
                 "id": f"msg_{datetime.now().timestamp()}",
                 "content": agent_response,
-                "agentId": "ai_assistant",
                 "sender": "AI Assistant",
                 "roomId": room_id,
                 "type": "agent",

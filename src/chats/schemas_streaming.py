@@ -1,11 +1,12 @@
 from typing import Optional
 
 from pydantic import BaseModel
+from src.chats.enums import MessageSenderEnum
 from src.core.config import settings
 
 
 class Message(BaseModel):
-    role: str
+    role: MessageSenderEnum
     content: str
 
 

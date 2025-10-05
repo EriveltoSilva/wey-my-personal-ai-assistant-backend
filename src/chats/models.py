@@ -46,23 +46,18 @@ class Chat(Base):
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now, onupdate=datetime.now, nullable=False)
 
     if TYPE_CHECKING:
-        from src.agents.models import Agent
         from src.users.models import User
 
     # Relationships
     user_id: Mapped[str] = mapped_column(pg.UUID(as_uuid=True), ForeignKey("tbl_users.id"), nullable=False, index=True)
-    agent_id: Mapped[str] = mapped_column(
-        pg.UUID(as_uuid=True), ForeignKey("tbl_agents.id"), nullable=False, index=True
-    )
 
     user: Mapped["User"] = relationship("User", back_populates="chats")
-    agent: Mapped["Agent"] = relationship("Agent", back_populates="chats")
     messages: Mapped[List["ChatMessage"]] = relationship(
         "ChatMessage", back_populates="chat", cascade="all, delete-orphan", order_by="ChatMessage.created_at"
     )
 
     def __repr__(self):
-        return f"<Chat(id={self.id}, title={self.title}, user_id={self.user_id}, agent_id={self.agent_id}, status={self.status})>"
+        return f"<Chat(id={self.id}, title={self.title}, user_id={self.user_id}, status={self.status})>"
 
     @staticmethod
     def generate_title(first_message: str) -> str:

@@ -5,11 +5,12 @@ from typing import Annotated, AsyncIterator
 from fastapi import APIRouter, Body, HTTPException
 from fastapi.responses import StreamingResponse
 from langchain.callbacks import AsyncIteratorCallbackHandler
-from langchain.schema import AIMessage, HumanMessage, SystemMessage
+from langchain.schema import AIMessage, HumanMessage
 from langchain_openai.chat_models import ChatOpenAI
 from sqlalchemy.ext.asyncio import AsyncSession
 from src.chats.background_tasks import background_tasks
 from src.chats.enums import MessageSenderEnum, MessageTypeEnum
+from src.chats.prompts import MY_SYSTEM_MESSAGE
 from src.chats.schemas_streaming import Conversation, Message
 from src.chats.services import ChatService
 from src.core.config import settings
@@ -64,22 +65,7 @@ async def send_message_with_history(
         for msg in conversation.messages[-settings.MESSAGES_MAX_NUMBER_IN_HISTORIC :]
     ]
 
-    messages.insert(
-        0,
-        SystemMessage(
-            content=(
-                "Você é um assistente virtual altamente educado e sofisticado, inspirado no Jarvis do filme Iron Man."
-                "Sempre trate o usuário com respeito e formalidade, chamando-o de Senhor ou Sr. em todas as interações."
-                "Sua postura deve ser gentil, precisa e profissional, oferecendo informações e soluções de forma clara e objetiva."
-                "Use texto em markdown para formatar suas respostas, destacando informações importantes e apresentando o conteúdo de forma organizada e visualmente limpa."
-                "Utilize blocos de código quando necessário, com duas quebras de linha antes e depois do bloco para manter o padrão estético."
-                "Seja breve em assuntos triviais, como cumprimentos, saudações e despedidas — vá direto ao ponto, sem rodeios."
-                "Entretanto, quando o diálogo abordar temas profundos, técnicos ou conceituais, expanda-se com riqueza de detalhes, demonstrando inteligência, precisão e domínio do assunto."
-                "Seja proativo, estratégico e sempre formal, mantendo a compostura de um assistente de alto nível que entende o contexto e antecipa as necessidades do Senhor."
-                "Responda sempre na lingua que o usuário fez a última pergunta mostrando a tua flexibilidade e adaptabilidade para acompanhar os passos do Senhor."
-            )
-        ),
-    )
+    messages.insert(0, MY_SYSTEM_MESSAGE)
 
     # Start the LLM task
     task = asyncio.create_task(model.agenerate(messages=[messages]))
@@ -136,7 +122,7 @@ async def chat_quick_response(message: Message):
     model = ChatOpenAI(
         verbose=settings.VERBOSE, temperature=settings.MESSAGE_RESPONSE_TEMPERATURE, api_key=settings.OPENAI_API_KEY
     )
-    response = model.invoke([HumanMessage(content=message.content)])
+    response = model.invoke([MY_SYSTEM_MESSAGE, HumanMessage(content=message.content)])
     return {"response": response.content}
 
 

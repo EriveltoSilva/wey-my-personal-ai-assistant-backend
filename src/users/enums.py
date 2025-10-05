@@ -19,3 +19,23 @@ class GenderEnum(str, Enum):
     FEMALE = "female"
     OTHER = "other"
     PREFER_NOT_TO_SAY = "prefer_not_to_say"
+
+
+class ExperienceLevelEnum(str, Enum):
+    """Experience levels for users."""
+
+    BEGINNER = "beginner"
+    INTERMEDIATE = "intermediate"
+    ADVANCED = "advanced"
+    EXPERT = "expert"
+
+
+class InteractionStyleEnum(str, Enum):
+    """Preferred interaction styles."""
+
+    FORMAL = "formal"
+    CASUAL = "casual"
+    TECHNICAL = "technical"
+    CONVERSATIONAL = "conversational"
+    CONCISE = "concise"
+    DETAILED = "detailed"
